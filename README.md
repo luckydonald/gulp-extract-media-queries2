@@ -79,12 +79,14 @@ Produces following files:
 <table>
 	<tr>
 		<th>style.css</th>
+		<th><del>style-min-width-640px.css</del></th>
 		<th>style-min-width-768px.css</th>
 	</tr>
 	<tr>
 		<td><pre>* {
 	box-sizing: border-box;
 }</pre></td>
+<td>you will not get this file</td>
 <td><pre>.container {
 	margin: 0 20px;
 }</pre></td>
