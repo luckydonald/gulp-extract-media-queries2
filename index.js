@@ -8,32 +8,35 @@ var dirname = require('path').dirname;
 var pathjoin = require('path').join;
 var basename = require('path').basename;
 
-module.exports = function(filter) {
+module.exports = function(filter, naming, lite_suffix = "") {
 	return through.obj(function(file, enc, callback) {
 		var stream = this;
-    var fileName = basename(file.path, '.css')
+		var fileName = basename(file.path, '.css')
 		var reworkData = rework(file.contents.toString())
 			.use(reworkMoveMedia());
 		var stylesheets = split(reworkData);
 		var stylesheetKeys = Object.keys(stylesheets);
 		stylesheetKeys.forEach(function(key) {
-      // replace 兼容 min-width:768px 之类冒号后边没有空格的写法
-			var name = cleanUpString(key.replace(/:\s?/g, '-'));
-      if (typeof filter === 'function' && !filter(fileName, name)) return
-
-      var poop = file.clone({
-        contents: false
-      });
-			var contents = stringify(stylesheets[key]);
-			poop.contents = new Buffer(contents);
-
+			var poop = file.clone({
+				contents: false
+			});
+			// filter
+			if (typeof filter === 'function' && !filter(fileName, name)) return
+			// custom naming function
+			var name = typeof naming === 'function' ? naming(key) : cleanUpString(key);
+			// generate html
+			console.log('<link href="css/'+name+'" rel="stylesheet" media="'+key+'">');
+			// add media queries as comment to the css itself
+			var comments = Buffer.from("/*! " + key + " !*/", "utf8");
+			var contents = new Buffer(stringify(stylesheets[key]));
+			poop.contents = Buffer.concat([comments,contents])
+			// determine output name/path
 			if (name) {
-        name = fileName + '-' + name
-				var filepath = pathjoin(dirname(file.path), name + '.css');
-				poop.path = filepath;
+				name = fileName + '-' + name
 			} else {
-				poop.path = pathjoin(dirname(file.path), fileName + '-lite.css');
+				name = fileName + lite_suffix
 			}
+			poop.path = pathjoin(dirname(file.path), name + '.css');
 			stream.push(poop);
 		});
 		callback();
